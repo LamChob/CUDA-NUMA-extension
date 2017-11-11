@@ -1,3 +1,6 @@
+Project providing interfacing NUMA and CUDA Unified Memory, allows allocation and data migration for NUMA nodes and CUDA devices.
+
+
 Folders:
 
 benchmark   
