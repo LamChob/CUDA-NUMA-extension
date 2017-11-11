@@ -1,0 +1,19 @@
+\begin{thebibliography}{1}
+
+\bibitem{Linux:Memdoc}
+{Linux Kernel}, ``{Linux Kernel Documentation}.''
+  \url{https://www.kernel.org/doc/Documentation/vm/numa_memory_policy.txt},
+  2017.
+\newblock [Online; Access Mai. 2017].
+
+\bibitem{HWLOC:doc}
+{OpenMPI Group}, ``{HWLOC 1.11.2 Documentation}.''
+  \url{https://www.open-mpi.org/projects/hwloc/doc/hwloc-v1.11.2-a4.pdf}, 2017.
+\newblock [Online; Access Mai. 2017].
+
+\bibitem{CUDA:Toolkit}
+{NVidia}, ``{CUDA Toolkit Documentation}.'' \url{http://docs.nvidia.com/cuda},
+  2017.
+\newblock [Online; Access Mai. 2017].
+
+\end{thebibliography}

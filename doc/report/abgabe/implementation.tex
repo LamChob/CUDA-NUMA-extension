@@ -1,0 +1,79 @@
+\chapter{Implementation}\label{c:impl}
+
+This chapter explains the reasoning behind the specification and implementation.
+Because host-side memory management offers no specific information on memory page access, there is no possibility to address individual NUMA nodes with
+implicit memory advices. However, memory is allocated in a way that implicit movement between host and device and memory advices, even "host-side" advices,
+still work. However, only explicit data movement can target individual NUMA nodes.
+
+Because managed memory pages are locked, moving data between NUMA nodes requires
+new memory allocation and copying data manually.
+Since figure \ref{f:datamig} shows that copying data is faster
+than page-movement by a large margin, copying data instead of moving pages was the desired method of migrating
+data anyway.
+\lstset{
+	frameround=fttt,
+	language=C,
+	numbers=left,
+	breaklines=true,
+	keywordstyle=\color{blue}\bfseries, 
+	basicstyle=\fontsize{10}{10}\ttfamily\color{black},
+	numberstyle=\color{black}
+}
+\lstMakeShortInline[columns=fixed]|
+
+\section{Interface Specification}
+The new interface consists of four functions, three of which are wrapping old function with NUMA
+capabilities and one that is new. To address distinct NUMA nodes, the CUDA device IDs are extended. The NUMA IDs extend the existing CUDA IDs. Example: In a system with 2 CUDA devices and 2 NUMA nodes, 0 and 1 are the CUDA devices, 2 and 3 three the NUMA nodes.
+\begin{itemize}
+\item \lstinline[columns=fixed]{numaMallocManaged(void** data, size_t size, int flags, int device)}
+	\newline Allocating memory in a NUMA aware fashion. The function signature now has an additional argument that allows the user to define on which NUMA-node the host-side memory should be allocated.
+\item \lstinline[columns=fixed]{numaMemPrefetchAsync<T>(T*&, size_t, int device, cudaStream_t stream)} 
+	\newline The explicit data-movement between NUMA nodes and CUDA devices.
+\item \lstinline[columns=fixed]{numaFree(void* data)}
+	\newline Deallocation for memory allocated with \verb|numaMallocManaged|
+\item \lstinline[columns=fixed]{numaGetAffinity(int gpu, int* node)}
+	\newline A new function that queries the NUMA-node closest to a given CUDA device id.
+\end{itemize} 
+
+These functions all fulfill the specification of being minimally invasive, since
+a simple search and replace leaves the source-code in a compilable state.
+
+\section{Interface Implementation}
+Explicit data-movement of managed memory is always added to a CUDA stream. This project uses CPU callback functions to enqueue the data movement in the CUDA stream. However, callback functions must not
+call any CUDA API function. This means that memory for data-movement between NUMA nodes needs to be allocated and freed outside the callback function.
+Memory for a buffer is therefore allocated on all NUMA nodes at once. This increases the memory footprint, but is 
+sufficient to research NUMA effects in CUDA applications. Because managed memory
+allows to oversubscribe memory on CUDA devices, the device memory capacity is not 
+an issue,and host-memory usually exists in a sufficient quantity.
+
+A global data structure (\verb|std::map|) stores all pointers and the pointers associated to the same buffer on different NUMA nodes.
+Pointers of type \verb|void*| are used as keys and stores a \verb|std::vector| as the corresponding value. Each element of the vector 
+is the pointer to the buffer of the vector-index's NUMA node.
+
+\subsection*{numaMallocManaged}
+This function pre-allocates memory for all NUMA nodes at once, since (de-)allocation is not possible during migration for reasons already mentioned. It either returns the pointer to the memory belonging to the NUMA node requested by the user or defaults to the lowest NUMA node ID. All pointers belonging to one buffer are managed in the global data structure.
+To maintain the ability to implicit copies and advices, data between host and device, \verb|cudaMallocManaged| is used to allocate the memory. This makes allocating memory more expensive for several reasons.
+
+First, memory allocated by \verb|cudaMallocManaged| is initially placed on the device and has no host-side NUMA node binding, yet. The memory is bound to a NUMA node the first time it is moved
+form the device into host memory. To guarantee correct NUMA placement for a buffer, the pages need to be moved to the host-side after the allocation.
+Otherwise, possible implicit copies between host and device can place the pages on a NUMA node not specified by the user.
+
+Second, because the data is moved by CUDA context threads and not threads belonging to the user's application, the physical placement is up to the context thread's memory binding policy. Linux however, does not allow manipulating memory binding policies of other threads. First touch policy is used to place the memory on NUMA nodes, which requires binding all threads
+belonging the process to the targeted NUMA node. This ensures all CUDA context threads are also running on the targeted NUMA node and placement is ensured, but also  requires retrieving
+of all threadIDs from the OS, which is expensive.
+
+\subsection*{numaMemPrefetchAsync}
+This function provides explicit data movement between devices and NUMA nodes. If the target is
+a CUDA device or the NUMA node to which the pointer passed as an argument already belongs, \verb|cudaMemPrefetchAsync()| is used.
+
+However, if data is moved to another NUMA node a CPU
+callback is added into the stream. The input pointer is swapped with the one from the target NUMA node that has already been
+allocated. The new pointer points to invalid data until the migration is complete. Therefore a stream synchronization before safe usage is mandatory. The callback copies the data back to the host
+in two steps. Using explicit data-movement the pages are returned to host and then copied to the targeted NUMA node. This decreases the resulting bandwidth.
+
+The data-movement itself is performed using multiple threads on the targeted NUMA node to increase the performance. Each thread copies a slice of the original buffer.
+\subsection*{numaFree}
+Because memory is allocated for all NUMA nodes, it also has to be released for all NUMA nodes. All memory areas associated with the given buffer are released at this point. 
+\subsection*{numaGetAffinity}
+This function wraps hwloc's feature to query the CPUs closest to the named CUDA device into
+a form that resembles CUDA API calls. Only a single node is returned, the lowest node ID retrieved by hwloc.

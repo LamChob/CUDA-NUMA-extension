@@ -1,0 +1,93 @@
+\chapter{Memory Management Resources}\label{c:env}
+%\begin{itemize}
+%	\item Linux Memory
+%	\item --Virtual and Physical Memory in NUMA Systems
+%	\item --Hardware Locality (hwloc)
+%	\item --Post Allocation Memory Migration
+%	\item CUDA Memory
+%	\item -- Unified Memory
+%\end{itemize}
+The following chapter introduces the reader to the memory management systems
+utilized in this project and how they work, in order to impart the knowledge required
+to understand the decision made during the project. The following sections will 
+discuss how memory is managed and represented in the operating system (Linux) and how NVidias CUDA framework is handling memory, both on host and device side. The focus is on
+how memory pages can be allocated and migrated between physical memory locations inside a NUMA systems.
+
+\section{Virtual and Physical Memory in NUMA Systems}\label{sec:vpm}
+The virtual memory hides the tasks of memory allocation and access in a NUMA architecture from the user, but allows
+users to manipulate the default behaviour for specific needs. 
+
+By default, Linux uses lazy memory allocation. Memory allocated by a program has no physical representation before the memory page is written for the first time. Only then it will be assigned to a physical memory location (and thus a NUMA node). 
+The NUMA node on which the thread is executed
+which is the first to write a value to the memory page, is the node in which physical
+memory the memory page is stored. This behaviour is called the "first touch" policy and
+is intended to ensure NUMA locality.
+Data that resides in physical memory that belongs
+to a NUMA node can be access with a higher bandwidth and less latency than memory which is 
+located on a remote node.
+
+The physical location of a page is fixed and will not change by itself during its lifetime, even if the thread that created the data has migrated to another NUMA node. This behaviour can be an issue for memory bound computations, since their performance is likely to suffer under the reduced memory bandwidth. \cite{Linux:Memdoc}
+\begin{figure}[hbtp]
+	\begin{tikzpicture}
+	\begin{axis}[
+	width=\textwidth,
+	height=8cm,
+	xlabel={Sample Size (MB)},
+	ylabel={Bandwidth (GB/s)},
+	grid=major,
+	legend entries={hwloc 1T, first touch1T, hwloc 8T, first touch 8T},
+	% ymode=log,
+	xmode = log,
+	legend pos=north west,
+	legend cell align=left
+	]
+	\addplot[thick,mark=o,blue,each nth point={8}] table[x index={0}, y index={2}] {../../../data/migrate_hwloc_o3.dat};
+	\addplot[thick,mark=o,red,each nth point={8}] table[x index={0}, y index={2}] {../../../data/migrate_old_o3.dat};
+	\addplot[thick,mark=x,black,each nth point={8}] table[x index={0}, y index={2}, skip first n=7] {../../../data/migrate_hwloc_o3.dat};
+	\addplot[thick,mark=x,green,each nth point={8}] table[x index={0}, y index={2}, skip first n=7] {../../../data/migrate_old_o3.dat};
+
+	\end{axis}
+	\end{tikzpicture}
+	\caption{Optimized migration performance, depending on problem size}
+	\label{f:datamig}
+\end{figure}
+\section{Migration of Physical Memory Pages}
+As mentioned in Section \ref{sec:vpm}, Linux places pages in local physical memory, if available. However, it also offers \verb|set_mempolicy| to manipulate the binding policy that defines the set of nodes on which memory is
+allowed to be physically located. With this feature, allocation can be forced on a specified NUMA node, without the need of the memory-initializing thread to be executed on this node. Although the physical location can be defined, allocation is still lazy.
+
+Once memory is initialized, there are two possible ways of migrating data to another NUMA node. The first one
+is the \verb|mbind()| syscall which tries to move each individual page of memory to the destination node.
+The blue and black lines in Figure \ref{f:datamig} shows that the performance of moving pages is low compared to the
+bandwidth available in the system. This is a result of
+the overhead created by the context swtich and necessary locking and unlocking of each individual memory page moved over the interconnect to the targeted NUMA node.
+
+The second option exploits the first-touch policy. Memory is placed on the targeted node either via first-touch or the binding policy and 
+then the data is copied manually, followed by a pointer swap and the release of the "old"
+memory area. Figure \ref{f:datamig} shows a significant bandwidth advantage over moving pages. The reasons are possible compiler optimizations like \verb|memcpy_sse|, multiple threads moving different slices of data in parallel and smaller locking overhead.
+This method increases the memory footprint during the migration. Also, the necessary access protection has to be performed manually.
+
+Neither of these strategies is able to maintain placement if the pages are swapped out of the main memory. This means that once the memory
+is swapped back in, it has to be bound to the desired location again, if it didn't get bound to the correct
+node by accident.
+
+\section{Hardware Locality (hwloc)}
+Hardware Locality is a portable wrapper for hardware topology exploration.
+While it offers an API that works platform independent, the available functionality is limited to the operating system's abilities. In this project, it is used to analyse CPU, NUMA and GPU characteristics. \cite{HWLOC:doc}
+
+\section{CUDA Memory Management}
+With the Pascal generation Nvidia introduced a new memory management system for CUDA applications. It is based on the ability of hardware memory paging on devices which allows the over-subscription of device memory and data movement on page-fault between host and device. This works in both directions. This eliminates the need to 
+explicitly move data between host and device. The same principle applies for Multi-GPU configurations and effortless data movement between different devices inside a compute node.
+
+While the API allows to differentiate between different GPUs, the host is always represented as a single compute node. Multiple NUMA nodes are not represented by the API.
+
+UM is allocated with \verb|cudaMallocManaged()|, otherwise it's features are not available. Data movement can still be explicitly requested by the user with \verb|cudaMemPrefetchAsync()|. This adds a copy task to the specified stream. The implicit behavior can be advised to duplicate read-mostly data or establish access mappings.
+
+It is possible to enforce the physical location of a memory page, when allocating memory using
+\verb|cudaMallocManaged()| because at first, the memory is allocated on the device. The first time it
+gets transferred to the host, is when the decision on the NUMA node happens. Our tests showed that it can't reliably be manipulated by the page binding policy on the host. One possible reason for this is that the
+data is copied inside one of the threads belonging to CUDA's runtime context and the page binding policy of 
+other threads can not be manipulated in Linux operating systems. Once a page is assigned to a NUMA node, it cannot be moved with the \verb|mbind()| syscall to another node because the pages are locked. This page-locking is a requirement for faster data movement with the GPU's DMA. \cite{CUDA:Toolkit}
+
+
+
+

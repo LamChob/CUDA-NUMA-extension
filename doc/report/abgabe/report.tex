@@ -1,0 +1,106 @@
+\documentclass[12pt,a4paper]{report}
+
+
+\usepackage{pgfplotstable}
+\usepackage{pgfplots}
+
+
+
+%\usepackage{tocloft}
+
+%glossar
+%\usepackage[xindy]{glossaries}
+
+% Bibliography Quellen.
+% Immer nur eine verwenden
+%\usepackage{natbib} % Zitate mit Namen + Jahr
+\usepackage{cite} % Zitate mit Nummern
+
+% Eigene Style-Datei mit weiteres Includes
+\usepackage{projekt}
+
+% Pakete für Links
+\usepackage{hyperref}
+\usepackage{url}
+
+\usepackage{glossaries}
+\makeglossaries
+
+
+\author{Dennis Sebastian Rieber}
+\title{Research Project Report}
+\setTopic{Extension of CUDA's unified memory API with NUMA aware features}
+\setFackultaet{Department of Physics and Astronomy}
+\setBetrieb{University of Heidelberg}
+\setInstitute{ZITI, Chair of Application Specific Computing}
+\setSupervisor{Prof. Dr. Robert Strzodka}
+\setStudiengang{Computer Engineering}
+
+\begin{document}
+% Set Font (If we don't want times)
+%\changefont{phv}{m}{n} % (SansSerif) Helvetica
+%\changefont{ppl}{m}{n} % Palantino
+%\changefont{pnc}{m}{n} % New Century Schoolbook
+
+% preface with roman numbers
+\maketitle
+\newpage % Newpage required for correct pagination
+
+% Roman counting for ToC
+\setcounter{page}{1}
+\pagenumbering{Roman}
+
+\begin{abstract}
+NUMA effects can have a big influence on an application's performance, yet many frameworks like CUDA pay no attention
+to NUMA locality. This project shows how CUDA applications can be made NUMA aware with a minimally invasive wrapper
+API and explores how this may impact application performance. The results show that correct NUMA placement between
+device and host can lead to an increase in overall performance, which is impaired by an overly expensive allocation process.
+\end{abstract}
+
+\tableofcontents
+\newpage % Newpage required for correct pagination
+
+% 1.5 linespacinfg
+\singlespacing
+%\onehalfspacing
+
+\clubpenalty = 10000 % schliesst Schusterjungen aus 
+\widowpenalty = 10000 \displaywidowpenalty = 10000% schliesst Hurenkinder aus
+
+% Equation listing
+\newcommand{\listequationsname}{Gleichungsverzeichnis}
+%\newlistof{myequations}{equ}{\listequationsname}
+\newcommand{\myequations}[1]{%
+\addcontentsline{equ}{myequations}{\protect\numberline{\theequation}#1}\par}
+
+	%\include{praeamble}
+	% Document with regular arabic pagination
+	\pagenumbering{arabic}
+	\setcounter{page}{1}
+	\include{motivation}
+	\include{target}
+	\include{environment}
+	\include{implementation}
+	\include{eval}
+	\include{conclusion}
+%	\newpage
+%\newglossaryentry{query}{
+%	name={Query},
+%	description={
+%		Suchanfrage, meist in einer speziellen Syntax. Enthält Informationen über die Suche und die Angeforderten Werte
+%	}		
+%}
+
+% Roman pagination for listing, continuing from ToC 
+%\pagenumbering{Roman}
+%\setcounter{page}{3}
+%\printindex
+%\glsaddall
+%\printglossaries
+%\lstlistoflistings\newpage
+%\listoffigures\newpage
+%\listofmyequations\newpage
+%\singlespacing
+\bibliographystyle{ieeetr}
+\bibliography{report}
+\end{document}

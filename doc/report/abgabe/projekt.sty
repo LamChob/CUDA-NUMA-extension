@@ -1,0 +1,223 @@
+% File: projekt.sty
+% Author: Dennis Rieber
+% date : 04.12.2013
+
+% Style definition für Praxis-Semester Bericht
+\usepackage[latin1]{inputenc}
+\usepackage[english]{babel}
+%\usepackage[pdftex]{graphicx}   % Use graphics in LaTeX.
+\usepackage{vmargin}            % Use custom page layout.
+\usepackage{fancyhdr}           % Use custom header and footer.
+\usepackage{listings}           % Use source codes in file.
+\usepackage{makeidx}            % Use index in file.
+\usepackage{color}           	% Use colorized tables.
+%\usepackage[svgnames]{xcolor}   % Use colors in file.
+\usepackage[T1]{fontenc}
+\usepackage{blindtext}
+\usepackage{csquotes}			% comfortable quoting
+\usepackage{tabularx}			% more complex Table usage
+\usepackage{wrapfig}			% figures can wrap around the text
+\usepackage{setspace}			% Linespacing
+\usepackage{times}				% Times new Roman as Standart font
+ 
+% default prefix for all graphics
+\graphicspath{{img/}}
+
+% define some custome colors
+\definecolor{lightblue}{rgb}{0.780, 0.768, 0.992}
+\definecolor{lightyellow}{RGB}{255, 250, 205}
+\definecolor{lightgray}{RGB}{235, 235, 235}
+
+% Create index.
+\makeindex
+
+% Set Name of List of Listing in the End
+\renewcommand\lstlistlistingname{Quellcode Verzeichnis}
+
+% Set Name of Listings
+\renewcommand\lstlistingname{Quellcode}
+
+% Set default page layout.
+\setmarginsrb{70pt}{45pt}{70pt}{45pt}{20pt}{35pt}{10pt}{45pt}
+\setlength{\marginparsep}{15pt}
+\setlength{\marginparwidth}{30pt}
+
+% Set default paragraph spacing
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+
+% define new header and Footer
+\newcommand{\fancystyle}{
+	\fancyhead[L]{\leftmark}
+	\fancyhead[R]{\getBetrieb}
+	\fancyfoot[L]{}
+	\fancyfoot[C]{\thepage}
+	\fancyfoot[R]{}
+}
+
+% set header/footer
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+\fancystyle
+\fancypagestyle{plain}{
+	\fancystyle
+}
+
+% Set Style for XML
+\lstdefinestyle{xml} {
+	breaklines=true,
+	language=XML,
+	showspaces=false,
+	keepspaces=true,
+	frame=0,
+	backgroundcolor=\color{lightgray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{green},
+	numberstyle = \tiny,
+	basicstyle=\footnotesize\ttfamily,
+}
+% Set Style for bash
+\lstdefinestyle{bash} {
+	breaklines=true,
+	language=bash,
+	showspaces=false,
+	keepspaces=true,
+	frame=0,
+	backgroundcolor=\color{lightgray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{green},
+	numberstyle = \tiny,
+	basicstyle=\footnotesize\ttfamily,
+}
+% Set Style for SQL
+\lstdefinestyle{sql} {
+	breaklines=true,
+	language=SQL,
+	showspaces=false,
+	keepspaces=true,
+	frame=0,
+	backgroundcolor=\color{lightgray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{green},
+	numberstyle = \tiny,
+	basicstyle=\footnotesize\ttfamily,
+}
+% Set Style for Perl
+\lstdefinestyle{perl} {
+	breaklines=true,
+	language=Perl,
+	showspaces=false,
+	keepspaces=true,
+	frame=0,
+	tabsize=4,
+	backgroundcolor=\color{lightgray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{green},
+	numbers=left,
+	numbersep=5pt,
+	numberstyle = \tiny\color{gray},
+	basicstyle=\footnotesize\ttfamily,
+}
+
+% struc  setStudiengang
+% param  #1  studiengang
+%
+% Provides setter and getter for variable Fackultaet.
+\newcommand{\setFackultaet}[1]{
+    % struc  getFackultaet
+    % ret    Value of Fackultaet.
+    \newcommand{\getFackultaet}{#1}
+}
+
+% struc  setStudiengang
+% param  #1  studiengang
+%
+% Provides setter and getter for variable studiengang.
+\newcommand{\setStudiengang}[1]{
+    % struc  getStudiengang
+    % ret    Value of studiengang.
+    \newcommand{\getStudiengang}{#1}
+}
+
+% struc  setBetreuer
+% param  #1  betreuer
+%
+% Provides setter and getter for variable betreuer.
+\newcommand{\setBetrieb}[1]{
+    % struc  getBetreuer
+    % ret    Value of betreuer.
+    \newcommand{\getBetrieb}{#1}
+}
+
+% struc  setAbgabeDat
+% param  #1  abgabeDat
+%
+% Provides setter and getter for variable abgabeDat.
+\newcommand{\setAbgabeDat}[1]{
+    % struc  getAbgabeDat
+    % ret    Value of abgabeDat.
+    \newcommand{\getAbgabeDat}{#1}
+}
+
+% struc  setTopic
+% param  #1  Topic
+%
+% Provides setter and getter for variable Topic.
+\newcommand{\setTopic}[1]{
+	% struc  getTopic
+    % ret    Value of Topic.
+	\newcommand{\getTopic}{#1}
+}
+
+% struc  setInstitute
+% param  #1  Institute
+%
+% Provides setter and getter for variable Topic.
+\newcommand{\setInstitute}[1]{
+	% struc  getTopic
+	% ret    Value of Topic.
+	\newcommand{\getInstitute}{#1}
+}
+
+% struc  setInstitute
+% param  #1  Institute
+%
+% Provides setter and getter for variable Topic.
+\newcommand{\setSupervisor}[1]{
+	% struc  getTopic
+	% ret    Value of Topic.
+	\newcommand{\getSupervisor}{#1}
+}
+
+% Command to change font
+\newcommand{\changefont}[3]{
+	\fontfamily{#1} \fontseries{#2} \fontshape{#3} \selectfont
+}
+
+% create new title
+\renewcommand{\maketitle}{
+	\thispagestyle{empty}
+	\begin{center}    
+		{\LARGE \@title\\}
+		\vfill
+	    %\includegraphics[scale=0.6]{logo-hd}
+	    %\hfill
+	    %\vfill
+		{\Large \getTopic}
+		\vfill
+		\parbox{0pt}{
+	        \begin{tabbing}
+	            Name:\hspace{60pt}  \= \@author         \\
+	            Program:           \> \getStudiengang  \\
+	            University:              \> \getBetrieb     \\	            	            Department:              \> \getFackultaet   \\
+	            Institute:              \> \getInstitute     \\
+	            Supervisor:         \> \getSupervisor \\
+	            Date:           \> \today
+	        \end{tabbing}
+
+	        }
+	        \vfill 
+	\end{center}	
+
+}

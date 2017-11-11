@@ -1,0 +1,174 @@
+\documentclass{scrartcl}
+
+\usepackage[paper=a4paper,left=30mm,right=20mm,top=25mm,bottom=30mm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[ngerman, english]{babel}
+\usepackage{amsmath}
+\usepackage{booktabs}		% toprule,midrule,...
+\usepackage{pdfpages}
+\usepackage{pgfplotstable}
+\usepackage{pgfplots}
+\usepackage{graphicx}
+\usepackage{listings}            % for code listings
+\usepackage{courier}
+\usepackage{color}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+%\pgfplotsset{compat=1.13}
+\selectlanguage{english}
+
+\lstset{ %
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+  basicstyle=\scriptsize\ttfamily,        % the size of the fonts that are used for the code
+  captionpos=b,                    % sets the caption-position to bottom
+  frame=single,                    % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  language=C,                      % the language of the code
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  stepnumber=2,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  stringstyle=\color{mymauve},     % string literal style
+  showstringspaces=false,
+  tabsize=2,                       % sets default tabsize to 2 spaces
+  title=\lstname,                  % show the filename of files included with \lstinputlisting; also try caption instead of title
+  aboveskip=10pt,
+  belowskip=10pt
+}
+
+\title{Exercise 4}
+\author{Dennis Rieber, Dominik Zosgornik}
+%\date{24. October 2015}
+\date{\today}
+\begin{document}
+
+%\maketitle
+%\tableofcontents
+Das erste Schaubild zeigt Bandbreiten für die Migration von Datenmengen zwischen 4MB und 8000MB ohne Compileroptimierung. Der Container startet einen Thread auf jeder NUMA-Node, welche Ziel der Migration ist. Bei 8 Threads, werden die Daten also auf 8 NUMA-Nodes verteilt. Bei den Tests wurden auf einem System mit 8 NUMA-Nodes jeweils von NUMA-Node 0 aus die Daten verteilt. Das Schaubild zeigt, dass mit wenigen Threads die Migration der Seiten über hwloc deutlich schneller ist. Wenn mehr Threads verwendet werden, ist jedoch die Verion mit "first touch" schneller.
+
+Das liegt vermutlich daran, dass bei steigender Threadanzahl die Arbeit pro Thread kleiner wird, währen die syscalls von hwloc alle im Bottleneck des Kernels "stecken bleiben". Schaubild 2 zeigt, ab welcher Zahl Threads bei eine größe von 8GB die Migration mit "first touch" schneller ist.
+
+Schaubild 3 und 4 zeigen den selben Versuchsaufbau, allerdings mit Compileroptimierung, \verb|g++ -O3|. Dabei zeigt sich deutlich, dass die Variante mit hwloc nicht von der Optimierung profitiert, bei der Variante mit "frist touch" aber bereits bei einem Thread eine deutlich höhere Bandbreite erreicht wird.
+
+
+\begin{figure}[hbtp]
+\begin{tikzpicture}
+\begin{axis}[
+    width=\textwidth,
+    height=12cm,
+    xlabel={Sample Size (MB)},
+    ylabel={Bandwidth (GB/s)},
+    grid=major,
+    legend entries={hwloc 1T, first touch1T, hwloc 8T, first touch 8T},
+   % ymode=log,
+    xmode = log,
+    legend pos=north west,
+    legend cell align=left
+]
+\addplot[thick,mark=x,blue,each nth point={8}] table[x index={0}, y index={2}] {migrate_hwloc.dat};
+\addplot[thick,mark=o,red,each nth point={8}] table[x index={0}, y index={2}] {migrate_old.dat};
+\addplot[thick,mark=x,black,each nth point={8}] table[x index={0}, y index={2}, skip first n=7] {migrate_hwloc.dat};
+\addplot[thick,mark=o,green,each nth point={8}] table[x index={0}, y index={2}, skip first n=7] {migrate_old.dat};
+
+\end{axis}
+\end{tikzpicture}
+\caption{Migration performance, depending on problem size}
+\label{fig:ex04}
+\end{figure}
+\begin{figure}[hbtp]
+	\begin{tikzpicture}
+	\begin{axis}[
+	width=\textwidth,
+	height=12cm,
+	xlabel={num. of threads},
+	ylabel={Bandwidth (GB/s)},
+	grid=major,
+	legend entries={hwloc, first touch},
+	% ymode=log,
+	legend pos=south east,
+	legend cell align=left,
+	]
+	\addplot[mark=x,black,thick] table[x index={1}, y index={2}, skip first n=64] {migrate_hwloc.dat};
+	\addplot[mark=o,green,thick] table[x index={1}, y index={2}, skip first n=64] {migrate_old.dat};
+	\end{axis}
+	\end{tikzpicture}
+	\caption{Migration performance, depending on number thread. Sample Size is 8GB. Num. of threads also represents number of distribution domains. (4 threads mean, data is also distrubuted to 4 domains)}
+\end{figure}
+
+\begin{figure}[hbtp]
+	\begin{tikzpicture}
+	\begin{axis}[
+	width=\textwidth,
+	height=12cm,
+	xlabel={Sample Size (MB)},
+	ylabel={Bandwidth (GB/s)},
+	grid=major,
+	legend entries={hwloc 1T, first touch1T, hwloc 8T, first touch 8T},
+	% ymode=log,
+	xmode = log,
+	legend pos=north west,
+	legend cell align=left
+	]
+	\addplot[thick,mark=o,blue,each nth point={8}] table[x index={0}, y index={2}] {migrate_hwloc_o3.dat};
+	\addplot[thick,mark=o,red,each nth point={8}] table[x index={0}, y index={2}] {migrate_old_o3.dat};
+	\addplot[thick,mark=x,black,each nth point={8}] table[x index={0}, y index={2}, skip first n=7] {migrate_hwloc_o3.dat};
+	\addplot[thick,mark=x,green,each nth point={8}] table[x index={0}, y index={2}, skip first n=7] {migrate_old_o3.dat};
+	
+	\end{axis}
+	\end{tikzpicture}
+	\caption{Optimized migration performance, depending on problem size}
+	\label{fig:ex04}
+\end{figure}
+\begin{figure}[hbtp]
+	\begin{tikzpicture}
+	\begin{axis}[
+	width=\textwidth,
+	height=12cm,
+	xlabel={num. of threads},
+	ylabel={Bandwidth (GB/s)},
+	grid=major,
+	legend entries={hwloc, first touch},
+	% ymode=log,
+	legend pos=north west,
+	legend cell align=left,
+	]
+	\addplot[mark=x,black,thick] table[x index={1}, y index={2}, skip first n=64] {migrate_hwloc_o3.dat};
+	\addplot[mark=o,green,thick] table[x index={1}, y index={2}, skip first n=64] {migrate_old_o3.dat};
+	\end{axis}
+	\end{tikzpicture}
+	\caption{Optimized migration performance, depending on number thread. Sample Size is 8GB. Num. of threads also represents number of distribution domains. (4 threads mean, data is also distrubuted to 4 domains)}
+\end{figure}
+
+	\begin{figure}[hbtp]
+		\begin{tikzpicture}
+		\begin{axis}[
+		width=\textwidth,
+		height=12cm,
+		xlabel={Sample Size (MB)},
+		ylabel={Bandwidth (GB/s)},
+		grid=major,
+		legend entries={hwloc 1T, first touch1T, hwloc 8T, first touch 8T},
+		% ymode=log,
+		xmode = log,
+		legend pos=north west,
+		legend cell align=left
+		]
+		\addplot[thick,mark=o,blue,each nth point={8}] table[x index={0}, y index={2}] {migration_hwloc_03_kb.dat};
+		\addplot[thick,mark=o,red,each nth point={8}] table[x index={0}, y index={2}] {migration_old_03_kb.dat};
+		\addplot[thick,mark=x,black,each nth point={8}] table[x index={0}, y index={2}, skip first n=7] {migration_hwloc_03_kb.dat};
+		\addplot[thick,mark=x,green,each nth point={8}] table[x index={0}, y index={2}, skip first n=7] {migration_old_03_kb.dat};
+		
+		\end{axis}
+		\end{tikzpicture}
+		\caption{Migration Bandwidth, kB Range}
+		\label{fig:ex04}
+	\end{figure}
+
+\end{document}

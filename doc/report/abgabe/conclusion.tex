@@ -1,0 +1,25 @@
+\chapter{Conclusions}\label{c:conc}
+Extending CUDA's unified memory with NUMA locality features proved to be difficult due to restrictions by CUDA and the Linux 
+kernel. Memory advices for implicit data movement can not be replicated in the Linux memory system. Replicating the
+explicit data movement was also not trivial, because first-touch allocation is required and at the same time not 
+possible during execution.
+
+To work around the restrictions of both, Linux and Nvidia, inefficiencies are introduced that could prove 
+critical for real world applications, especially the inefficient memory allocation and increased memory
+footprint. Resolving these issues would require new functionalities implemented by the vendors, for example, the option that
+unified memory can be allocated on the host side first. The data transfer from device to host would be eliminated and
+first-touch binding would be more efficient. Also, allowing certain API-calls from inside a stream callback function, especially memory
+(de-)allocation, would lead to a normalized memory footprint that is only increased during the migration.
+
+Despite these difficulties,  the data from micro- and application benchmarks 
+show that NUMA awareness in CUDA applications can have a big influence on the performance, 
+depends on factors like size of workload, kernel runtime and 
+intensity of data movement between host and device. 
+
+
+\section{Future Work}
+To continue this project in the future and making it more applicable for real-world applications the following
+points should be addressed. (1) Making it platform independent. Parts of the code required for memory allocation is currently Linux specific. (2) Reducing the memory footprint. While an ideal
+solution would require action by the vendor, in the current version some kind of garbage collector could
+be implemented, which deletes buffers that are marked as trash by the callback function. This would allow allocation of memory
+on demand before the callback is added to the stream and deleting the old data at a later point in execution, but before all the data is freed.

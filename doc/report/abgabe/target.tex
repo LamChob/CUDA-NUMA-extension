@@ -1,0 +1,24 @@
+\chapter{Project Goals}\label{c:target}
+The goal of this project is to explore the possibilities of extending CUDA's unified memory (UM) functions to 
+NUMA nodes and represent them in the same way a CUDA device is represented, with regards to data-movement
+of an application. This project evaluates if and how the tools that manipulate NUMA affinity of memory pages can be applied to imitate the behaviour of CUDA's unified memory on the host side. The goal is to enable placement of
+host-side data close to the used CUDA devices in order to minimize latency and maximize bandwidth.
+
+An evaluation of the available tools for NUMA manipulation is performed in order to determine which tool
+should be used in the implementation. Differences in performance and memory footprint are reviewed.
+Because unified memory requires an allocation via the CUDA Runtime API, this project reviews how data
+is allocated by CUDA and the possibilities of manipulating affinity.
+
+The extension of CUDA's UM functionalities is implemented as a wrapper with a minimally invasive API. By using
+function signatures that allow a simple search and replace operation in existing code, every application
+can be made NUMA aware with little effort.
+The resulting API wrapper is used to evaluate the NUMA affinity in CPU/GPU heterogeneous applications in
+order to determine if and when it is beneficial and which factors are contributing to this.
+%
+%\begin{itemize}
+%	\item Extending of CUDAs UM behavior to NUMA Nodes by:
+%	\item Evaluation of Unified Memory abilities
+%	\item Evaluation of Linux Memory abilities
+%	\item Replication of UM behavoir for numa nodes with a minimal invasive API
+%	\item Performance Evaluation
+%\end{itemize}
